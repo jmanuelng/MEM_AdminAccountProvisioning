@@ -3,7 +3,7 @@
 Verifies the existence of a local user account and its membership in the Administrators group.
 
 .DESCRIPTION
-Looks for a specified local user account on a Windows device and verifies whether the account is a member of the local Administrators group.
+Looks for a specified local user account on a Windows device and verifies whether the account is a member of the local Administrators group. If PowerShell cmdlets fail, it falls back to using 'net localgroup'.
 
 .INSTRUCTIONS
 To use this script, you must manually set the following variable within the script code:
@@ -42,7 +42,7 @@ try {
     $detectSummary += "User exists. "
     
     # Verify if the user is part of the Administrators group
-    $admins = Get-LocalGroupMember -Group "Administrators" | Select-Object -ExpandProperty Name
+    $admins = Get-LocalGroupMember -Group "Administrators" -ErrorAction Stop | Select-Object -ExpandProperty Name
     if ($UserName -in $admins) {
         $detectSummary += "User is in Administrators. "
     } else {
@@ -53,8 +53,19 @@ try {
     $result = 1
     $detectSummary += "User does NOT exist. "
 } catch {
-    $result = 2
-    $detectSummary += "Error occurred while checking for user. Error: $_ "
+    # Fallback to net localgroup command if Get-LocalGroupMember fails
+    try {
+        $admins = net localgroup Administrators | Where-Object { $_ -match $UserName }
+        if ($admins) {
+            $detectSummary += "User is in Administrators. "
+        } else {
+            $detectSummary += "User NOT member of Administrators group. "
+            $result = 1
+        }
+    } catch {
+        $result = 2
+        $detectSummary += "Error occurred while checking for user with net localgroup. Error: $_ "
+    }
 }
 
 # Output the result

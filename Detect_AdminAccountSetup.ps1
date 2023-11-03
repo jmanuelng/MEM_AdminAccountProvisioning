@@ -38,7 +38,7 @@ $detectSummary = ""
 
 # Check if the user exists
 try {
-    # $user = Get-LocalUser -Name $UserName -ErrorAction Stop
+    $user = Get-LocalUser -Name $UserName -ErrorAction Stop
     $detectSummary += "User exists. "
     
     # Verify if the user is part of the Administrators group
